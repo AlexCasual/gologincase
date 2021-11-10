@@ -1,0 +1,122 @@
+
+/*client hello request*/
+{
+  "id":1,
+  "command":"HELLO"
+}
+
+/*server hello response*/
+{
+  "id":1,
+  "command":"HELLO",
+  "auth_method":"plain-text"
+}
+
+/*client auth request*/
+{
+  "id":2,
+  "command":"login",
+  "login":"<login>",
+  "password":"<password>",
+}
+
+/*server auth success response*/
+{
+  "id":2,
+  "command":"login",
+  "status":"ok",
+  "session":"<session UUID>"
+}
+
+/*server auth fail response*/
+{
+  "id":2,
+  "command":"login",
+  "status":"failed",
+  "message":"<error text>"
+}
+
+/*client message request*/
+{
+  "id":2,
+  "command":"message",
+  "body":"<message body>",
+  "session":"<session UUID>"
+}
+
+/*server message success response*/
+{
+  "id":2,
+  "command":"message_reply",
+  "status":"ok",
+  "client_id":"<client message id>"
+}
+
+/*server message fail response*/
+{
+  "id":2,
+  "command":"message_reply",
+  "status":"failed",
+  "message":"<error text>"
+}
+
+/*server message request*/
+{
+  "id":2,
+  "command":"message",
+  "body":"<message body>",
+  "sender_login":"<login>",
+  "session":"<session UUID>"
+}
+
+/*client message success response*/
+{
+  "id":2,
+  "command":"message_reply",
+  "status":"ok",
+  "client_id":"<server message id>"
+}
+
+/*client message fail response*/
+{
+  "id":2,
+  "command":"message_reply",
+  "status":"failed",
+  "message":"<error text>"
+}
+
+/*client ping request*/
+{
+  "id":2,
+  "command":"ping",
+  "session":"<session UUID>"
+}
+
+/*server ping success response*/
+{
+  "id":2,
+  "command":"ping_reply",
+  "status":"ok",
+}
+
+/*server ping fail response*/
+{
+  "id":2,
+  "command":"ping_reply",
+  "status":"failed",
+  "message":"<error text>"
+}
+
+/*client bye request*/
+{
+  "id":2,
+  "command":"logout",
+  "session":"<session UUID>"
+}
+
+/*server bye response*/
+{
+  "id":2,
+  "command":"logout_reply",
+  "status":"ok",
+}
