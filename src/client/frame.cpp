@@ -144,13 +144,13 @@ namespace gologin::gui
 			m_input_field = new wxTextCtrl(m_main_panel, wxID_ANY, _T(""), wxDefaultPosition, wxDefaultSize, wxTEXT_TYPE_ANY);
 			m_output_field = new wxTextCtrl(m_main_panel, wxID_ANY, _T(""), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE | wxTE_READONLY);
 
-			m_connect_button = new wxButton(m_main_panel, wxID_EXIT, detail::connect_button);
+			m_connect_button = new wxButton(m_main_panel, wxID_ANY, detail::connect_button);
 			m_disconnect_button = new wxButton(m_main_panel, wxID_ANY, detail::disconnect_button);
 			
-			m_login_button = new wxButton(m_main_panel, wxID_EXIT, detail::login_button);
+			m_login_button = new wxButton(m_main_panel, wxID_ANY, detail::login_button);
 			m_logout_button = new wxButton(m_main_panel, wxID_ANY, detail::logout_button);
 			
-			m_send_button = new wxButton(m_main_panel, ID_BUTTON, detail::send_button);
+			m_send_button = new wxButton(m_main_panel, wxID_ANY, detail::send_button);
 
 			m_logout_button->Hide();
 			m_disconnect_button->Hide();

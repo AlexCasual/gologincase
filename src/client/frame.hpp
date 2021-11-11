@@ -76,8 +76,11 @@ namespace gologin
 
 		enum
 		{
-			ID_BUTTON = 108,
-			ID_LIST
+			ID_CONNECT_BUTTON = 108,
+			ID_DISCONNECT_BUTTON,
+			ID_LOGON_BUTTON,
+			ID_LOGOUT_BUTTON,
+			ID_SEND_BUTTON
 		};
 	}
 }
