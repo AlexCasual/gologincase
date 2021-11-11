@@ -8,10 +8,20 @@ namespace gologin
 	{
 		using client_session_id_t = gologin::tcp::client_traits::session_id_t;
 
-		enum class status
+		enum class client_status
 		{
-			success = 0,
-			fail
+			added = 0,
+			removed,
+			accepted,
+			rejected,
+			not_found
+		};
+
+		using auth_client = struct
+		{
+			std::uint64_t	_id;
+			std::string		_session;
+			client_status	_status;
 		};
 
 		class provider
@@ -20,13 +30,15 @@ namespace gologin
 			provider(const std::string& _client_login, const std::string& _client_pass, std::shared_ptr<gologin::core::logger> _logger);
 			~provider();
 		
-			status check_client(std::uint64_t _client_id, const std::string& _client_session);
-			status rem_client(std::uint64_t _client_id, const std::string& _client_session);
-			status add_client(std::uint64_t _client_id, const std::string& _client_login, const std::string& _client_pass, client_session_id_t& _session);
+			client_status status_client(std::uint64_t _client_id, const std::string& _client_session);
+			client_status rem_client(std::uint64_t _client_id, const std::string& _client_session);
+			client_status add_client(std::uint64_t _client_id, const std::string& _client_login, const std::string& _client_pass, client_session_id_t& _session);
 		
 			private:
 			std::string m_client_login;
 			std::string m_client_pass;
+			std::shared_mutex m_clients_mutex;
+			std::unordered_map<std::uint64_t, auth_client> m_clients;
 			std::shared_ptr<gologin::core::logger> m_logger;
 		};
 	}

@@ -28,19 +28,92 @@ namespace gologin::gui
 		static const char icon_file[] = "\\icon\\icon.bmp";
 	}
 
-	frame::frame(const wxString& title, const frame_handlers_t& handlers)
+	frame::frame(const wxString& title, const input_handlers_t& input, ouput_handlers_t& output)
 		: wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize)
-		, m_handlers(handlers), m_title(title)
+		,  m_title(title), m_input_handlers(input)
+	{
+		output_hadnlers(output);
+
+		//load_icon();
+
+		load_ui();
+	}
+
+	frame::~frame()
+	{
+		m_main_panel;
+	}
+
+	void frame::on_size(wxSizeEvent& event)
+	{
+		event.Skip();
+	}
+
+	void frame::on_quit(wxCommandEvent& event)
+	{
+		Close(true);
+	}
+
+	void frame::on_connect(wxCommandEvent& event)
+	{
+		auto _address = m_address_field->GetValue();
+		if (_address.empty())
+		{
+			m_status_bar->SetStatusText(_T("Invalid server address."));
+			return;
+		}
+
+		wxString _text; 
+		ui_status _status;
+		input_handler(ui_action::on_connect, _address);
+	}
+
+	void frame::on_disconnect(wxCommandEvent& event)
+	{
+		input_handler(ui_action::on_disconnect, wxString{});
+	}
+	
+	void frame::on_login(wxCommandEvent& event)
+	{
+		auto _userpass = m_login_field->GetValue();
+		if (_userpass.empty())
+		{
+			m_status_bar->SetStatusText(_T("Invalid login or password."));
+			return;
+		}
+
+		input_handler(ui_action::on_login, _userpass);
+	}
+
+	void frame::on_logout(wxCommandEvent& event)
+	{
+		input_handler(ui_action::on_logout, wxString{});
+	}
+
+	void frame::on_send(wxCommandEvent& event)
+	{
+		auto _msg = m_input_field->GetValue();
+
+		if (_msg.empty())
+		{
+			m_status_bar->SetStatusText(_T("Invalid message."));
+			return;
+		}
+
+		input_handler(ui_action::on_send, _msg);
+	}
+
+	void frame::on_about(wxCommandEvent& event)
+	{
+		wxMessageBox(_T("Gologin test case by a.zawadski [2021]"));
+	}
+
+	void frame::load_ui()
 	{
 		this->Center();
 
 		this->SetMinSize(detail::min_frame_size);
 		this->SetMaxSize(detail::max_frame_size);
-
-		//icon
-		{
-			load_icon();
-		}
 
 		//status bar
 		{
@@ -141,162 +214,6 @@ namespace gologin::gui
 		Connect(m_logout_button->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(frame::on_logout));
 		Connect(m_send_button->GetId(), wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(frame::on_send));
 	}
-
-	frame::~frame()
-	{
-		m_main_panel;
-	}
-
-	void frame::on_size(wxSizeEvent& event)
-	{
-		event.Skip();
-	}
-
-	void frame::on_quit(wxCommandEvent& event)
-	{
-		Close(true);
-	}
-
-	void frame::on_connect(wxCommandEvent& event)
-	{
-		auto _address = m_address_field->GetValue();
-		if (_address.empty())
-		{
-			m_status_bar->SetStatusText(_T("Invalid server address."));
-			return;
-		}
-
-		wxString _status; 
-		auto _res = m_handlers._on_connect(_address, _status);
-		if (_res)
-		{
-			m_disconnect_button->Show(true);
-
-			m_address_field->Disable();
-
-			m_status_bar->SetStatusText(_status);
-
-			FindWindowById(event.GetId())->Hide();
-
-			m_main_panel->Layout();
-
-			return;
-		}
-		
-		m_status_bar->SetStatusText(_status);
-	}
-
-	void frame::on_disconnect(wxCommandEvent& event)
-	{
-		wxString _status; 
-		auto _res = m_handlers._on_disconnect(_status);
-		if(_res)
-		{
-			m_connect_button->Show(true);
-
-			m_address_field->Enable();
-
-			m_status_bar->SetStatusText(_status);
-
-			FindWindowById(event.GetId())->Hide();
-
-			m_main_panel->Layout();
-
-			return;
-		}
-		
-		m_status_bar->SetStatusText(_status);
-
-	}
-	
-	void frame::on_login(wxCommandEvent& event)
-	{
-		auto _userpass = m_login_field->GetValue();
-		if (_userpass.empty())
-		{
-			m_status_bar->SetStatusText(_T("Invalid login or password."));
-			return;
-		}
-
-		wxString _status; 
-		auto _res = m_handlers._on_login(_userpass, _status);
-		if(_res)
-		{		
-			m_logout_button->Show(true);
-
-			m_login_field->Disable();
-		
-			m_status_bar->SetStatusText(_status);
-
-			FindWindowById(event.GetId())->Hide();
-
-			m_main_panel->Layout();
-
-			return;
-		}
-
-		m_status_bar->SetStatusText(_status);
-	}
-
-	void frame::on_logout(wxCommandEvent& event)
-	{
-		wxString _status; 
-		auto _res = m_handlers._on_logout(_status);
-		if(_res)
-		{
-			m_login_button->Show(true);
-
-			m_login_field->Enable();
-
-			m_status_bar->SetStatusText(_status);
-
-			FindWindowById(event.GetId())->Hide();
-
-			m_main_panel->Layout();
-
-			return;
-		}
-
-		m_status_bar->SetStatusText(_status);
-	}
-
-	void frame::on_send(wxCommandEvent& event)
-	{
-		auto _msg = m_input_field->GetValue();
-
-		if (_msg.empty())
-		{
-			m_status_bar->SetStatusText(_T("Invalid message."));
-			return;
-		}
-
-		wxString _status; 
-		auto _res = m_handlers._on_send(_msg, _status);
-		if(_res)
-		{
-			m_output_field->AppendText(detail::sender_prefix);
-			m_output_field->AppendText(_msg);
-
-			m_output_field->SetInsertionPointEnd();
-			m_output_field->AppendText(_T("\n"));
-
-			m_input_field->Clear();
-
-
-			m_status_bar->SetStatusText(_status);
-
-			m_main_panel->Layout();
-
-			return;
-		}
-
-		m_status_bar->SetStatusText(_status);
-	}
-
-	void frame::on_about(wxCommandEvent& event)
-	{
-		wxMessageBox(_T("Gologin test case by a.zawadski [2021]"));
-	}
 	
 	void frame::load_icon()
 	{
@@ -310,5 +227,190 @@ namespace gologin::gui
 		//_icon.LoadFile(_app_dir);
 
 		this->SetIcon(_icon);
+	}
+
+	void frame::input_handler(const ui_action& act, const wxString& data)
+	{
+		if (auto _h = m_input_handlers.find(act); _h != m_input_handlers.end())
+		{
+			return _h->second(data);
+		}
+	}
+
+	void frame::output_hadnlers(ouput_handlers_t& handlers)
+	{
+		handlers[ui_action::on_login] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_login(st, msg, data);
+			};
+
+		handlers[ui_action::on_logout] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_logout(st, msg, data);
+			};
+
+		handlers[ui_action::on_connect] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_connect(st, msg, data);
+			};
+
+		handlers[ui_action::on_disconnect] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_disconnect(st, msg, data);
+			};
+
+		handlers[ui_action::on_recv] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_recv(st, msg, data);
+			};
+
+		handlers[ui_action::on_send] = [&](const ui_status& st, const wxString& msg, const wxString& data)
+			{
+				return on_send(st, msg, data);
+			};
+	}
+
+	void frame::on_connect(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{
+			m_disconnect_button->Show(true);
+
+			m_address_field->Disable();
+
+			m_status_bar->SetStatusText(msg);
+
+			m_connect_button->Hide();
+
+			m_main_panel->Layout();
+
+			return;
+		}
+		else if (st == ui_status::pending)
+		{
+			m_address_field->Disable();
+			m_connect_button->Disable();
+			m_main_panel->Layout();
+			return;
+		}
+		
+		m_status_bar->SetStatusText(msg);
+	}
+
+	void frame::on_disconnect(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{
+			m_connect_button->Show(true);
+
+			m_address_field->Enable();
+
+			m_status_bar->SetStatusText(msg);
+
+			m_disconnect_button->Hide();
+
+			m_main_panel->Layout();
+
+			return;
+		}
+		else if (st == ui_status::pending)
+		{
+			m_disconnect_button->Disable();
+			m_main_panel->Layout();
+			return;
+		}
+		
+		m_status_bar->SetStatusText(msg);
+	}
+
+	void frame::on_login(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{		
+			m_logout_button->Show(true);
+
+			m_login_field->Disable();
+		
+			m_status_bar->SetStatusText(msg);
+
+			m_login_button->Hide();
+
+			m_main_panel->Layout();
+
+			return;
+		}
+		else if (st == ui_status::pending)
+		{
+			m_login_button->Disable();
+			m_main_panel->Layout();
+			return;
+		}
+
+		m_status_bar->SetStatusText(msg);
+	}
+
+	void frame::on_logout(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{
+			m_login_button->Show(true);
+
+			m_login_field->Enable();
+
+			m_status_bar->SetStatusText(msg);
+
+			m_logout_button->Hide();
+
+			m_main_panel->Layout();
+
+			return;
+		}
+		else if (st == ui_status::pending)
+		{
+			m_logout_button->Disable();
+			m_main_panel->Layout();
+			return;
+		}
+
+		m_status_bar->SetStatusText(msg);
+	}
+
+	void frame::on_send(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{
+			return;
+		}
+		else if (st == ui_status::pending)
+		{
+			m_output_field->AppendText(detail::sender_prefix);
+			m_output_field->AppendText(data);
+
+			m_output_field->SetInsertionPointEnd();
+			m_output_field->AppendText(_T("\n"));
+
+			m_input_field->Clear();
+
+			m_main_panel->Layout();
+			
+			return;
+		}
+
+		m_status_bar->SetStatusText(msg);
+	}
+
+	void frame::on_recv(const ui_status& st, const wxString& msg, const wxString& data)
+	{
+		if (st == ui_status::success)
+		{
+			m_output_field->AppendText(msg);
+			m_output_field->AppendText(_T(": "));
+			m_output_field->AppendText(data);
+
+			m_output_field->SetInsertionPointEnd();
+			m_output_field->AppendText(_T("\n"));
+
+			m_main_panel->Layout();
+		}
 	}
 }

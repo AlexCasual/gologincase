@@ -208,8 +208,8 @@ namespace gologin
 		responce[_message_field_("id")] = _id;
 		responce[_message_field_("command")] = gologin::messages::commands::ping_reply;
 
-		auto _auth = m_auth_provider->check_client(_id, _session);
-		if (_auth == auth::status::success)
+		auto _auth = m_auth_provider->status_client(_id, _session);
+		if (_auth == auth::client_status::accepted)
 		{
 			responce[_message_field_("status")] = "ok";
 			responce[_message_field_("message")]= "";
@@ -232,7 +232,7 @@ namespace gologin
 
 		std::string _session;
 		auto _auth = m_auth_provider->add_client(_id, _login, _password, _session);
-		if (_auth == auth::status::success)
+		if (_auth == auth::client_status::accepted)
 		{
 			responce[_message_field_("status")] = "ok";
 			responce[_message_field_("session")] = _session;
@@ -255,7 +255,7 @@ namespace gologin
 		responce[_message_field_("command")] = gologin::messages::commands::bye_reply;
 
 		auto _auth = m_auth_provider->rem_client(_id, _session);
-		if (_auth == auth::status::success)
+		if (_auth == auth::client_status::removed)
 		{
 			responce[_message_field_("status")] = "ok";
 		}
@@ -275,8 +275,8 @@ namespace gologin
 		responce[_message_field_("command")] = gologin::messages::commands::msg_reply;
 
 		std::string _client_id;
-		auto _auth = m_auth_provider->check_client(_id, _session);
-		if (_auth == auth::status::success)
+		auto _auth = m_auth_provider->status_client(_id, _session);
+		if (_auth == auth::client_status::accepted)
 		{
 			responce[_message_field_("status")] = "ok";
 			responce[_message_field_("client_id")] = _client_id;

@@ -35,11 +35,13 @@ namespace gologin
 			
 			gologin::gui::frame* create_frame();
 
-			bool on_login_frame_callback(const wxString& credentials, wxString& status);
-			bool on_logout_frame_callback(wxString& status);
-			bool on_connect_frame_callback(const wxString& address, wxString& status);
-			bool on_disconnect_frame_callback(wxString& status);
-			bool on_send_frame_callback(const wxString& message, wxString& status);
+			void output_handler(const ui_action& act, const ui_status& st, const wxString& msg, const wxString& data); 
+
+			void on_login_frame_callback(const wxString& data);
+			void on_logout_frame_callback(const wxString& data);
+			void on_connect_frame_callback(const wxString& data);
+			void on_disconnect_frame_callback(const wxString& data);
+			void on_send_frame_callback(const wxString& data);
 
 			void server_message_packet_handler(const gologin::messages::server::msg::request& request, gologin::messages::client::msg::response& responce);
 			void server_message_reply_packet_handler(const gologin::messages::server::msg::response& responce);
@@ -52,6 +54,7 @@ namespace gologin
 			app_config m_config;
 			app_cookie m_cookie; 
 			gologin::gui::frame* m_frame;
+			ouput_handlers_t m_output_frame_handlers;
 			std::shared_ptr<gologin::tcp::client> m_tcp_client;
 			std::shared_ptr<gologin::core::logger> m_logger;
 		};

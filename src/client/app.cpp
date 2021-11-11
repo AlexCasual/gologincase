@@ -114,19 +114,27 @@ namespace gologin::gui
 	
 	gologin::gui::frame* app::create_frame()
 	{
-		frame_handlers_t _frame_callbacks;
-		_frame_callbacks._on_login = std::bind(&app::on_login_frame_callback, this, std::placeholders::_1, std::placeholders::_2);
-		_frame_callbacks._on_logout = std::bind(&app::on_logout_frame_callback, this, std::placeholders::_1);
-		_frame_callbacks._on_connect = std::bind(&app::on_connect_frame_callback, this, std::placeholders::_1, std::placeholders::_2);
-		_frame_callbacks._on_disconnect = std::bind(&app::on_disconnect_frame_callback, this, std::placeholders::_1);
-		_frame_callbacks._on_send = std::bind(&app::on_send_frame_callback, this, std::placeholders::_1, std::placeholders::_2);
+		input_handlers_t _input_frame_callbacks;
+		_input_frame_callbacks.emplace(ui_action::on_login, std::bind(&app::on_login_frame_callback, this, std::placeholders::_1));
+		_input_frame_callbacks.emplace(ui_action::on_logout, std::bind(&app::on_logout_frame_callback, this, std::placeholders::_1));
+		_input_frame_callbacks.emplace(ui_action::on_connect, std::bind(&app::on_connect_frame_callback, this, std::placeholders::_1));
+		_input_frame_callbacks.emplace(ui_action::on_disconnect, std::bind(&app::on_disconnect_frame_callback, this, std::placeholders::_1));
+		_input_frame_callbacks.emplace(ui_action::on_send, std::bind(&app::on_send_frame_callback, this, std::placeholders::_1));
 		
-		return new gologin::gui::frame(detail::_frame_title, _frame_callbacks);
+		return new gologin::gui::frame(detail::_frame_title, _input_frame_callbacks, m_output_frame_handlers);
 	}
 
-	bool app::on_login_frame_callback(const wxString& credentials, wxString& status)
+	void app::output_handler(const ui_action& act, const ui_status& st, const wxString& msg, const wxString& data)
 	{
-		std::string _credentials{credentials.c_str()};
+		if (auto _h = m_output_frame_handlers.find(act); _h != m_output_frame_handlers.end())
+		{
+			return _h->second(st, msg, data);
+		}
+	}
+
+	void app::on_login_frame_callback(const wxString& data)
+	{
+		std::string _credentials{data.c_str().AsChar()};
 		
 		std::string _login;
 		std::string _pass;
@@ -141,8 +149,8 @@ namespace gologin::gui
 		//form : [user:pass]
 		if (_login.empty() || _pass.empty())
 		{
-			status = _T("Invalid user or pass.");
-			return false;
+			output_handler(ui_action::on_login, ui_status::failed, _T("Invalid user or pass."), wxString{});
+			return;
 		}
 
 		gologin::messages::client::auth::request _request;
@@ -154,12 +162,11 @@ namespace gologin::gui
 		auto _buff = google::json::packer::to(_request);
 		auto _ret = m_tcp_client->send(gologin::messages::commands::auth,_buff);
 
-		status = _ret ? _T("Login succes.") : _T("Login fail.");
-			
-		return _ret;
+		_ret ? output_handler(ui_action::on_login, ui_status::success, _T("Login..."), wxString{}) :
+			output_handler(ui_action::on_login, ui_status::failed, _T("Login failed."), wxString{});
 	}
 
-	bool app::on_logout_frame_callback(wxString& status)
+	void app::on_logout_frame_callback(const wxString& data)
 	{
 		gologin::messages::client::bye::request _request;
 		_request[_message_field_("command")] = gologin::messages::commands::bye;
@@ -169,20 +176,31 @@ namespace gologin::gui
 		auto _buff = google::json::packer::to(_request);
 		auto _ret = m_tcp_client->send(gologin::messages::commands::bye, _buff);
 
-		status = _ret ? _T("Logout succes.") : _T("Logout fail.");
-
-		return _ret;
+		_ret ? output_handler(ui_action::on_logout, ui_status::success, _T("Logout..."), wxString{}) :
+			output_handler(ui_action::on_logout, ui_status::failed, _T("Logout failed."), wxString{});
 	}
 
-	bool app::on_connect_frame_callback(const wxString& address, wxString& status)
+	void app::on_connect_frame_callback(const wxString& data)
 	{
-		auto _saddrr = Poco::Net::SocketAddress(address);
+		auto _saddrr = Poco::Net::SocketAddress(data.c_str().AsChar());
 		auto _status = m_tcp_client->connect(_saddrr.host().toString(), _saddrr.port());
-		if (_status == gologin::tcp::client_traits::status::connected)
+		if (_status != gologin::tcp::client_traits::status::connected)
 		{
-			status = _T("Connect to server failed.");
-			return false;
+			output_handler(ui_action::on_connect, ui_status::failed, _T("Connect to server failed."), wxString{});
+			return;
 		}
+
+		//generate client id
+		{
+			std::string _id;
+			std::random_device _rd;
+			std::mt19937 _mt(_rd());
+			std::uniform_int_distribution<int> dist('a', 'z'); 
+			std::generate_n(std::back_inserter(_id), 32, [&]{return dist(_mt);});
+
+			m_cookie._client_id = std::atoll(_id.c_str());
+		}
+
 
 		gologin::messages::client::hello::request _request;
 		_request[_message_field_("command")] = gologin::messages::commands::hello;
@@ -191,38 +209,31 @@ namespace gologin::gui
 		auto _buff = google::json::packer::to(_request);
 		auto _ret = m_tcp_client->send(gologin::messages::commands::hello, _buff);
 
-		status = _ret ? _T("Connected.") : _T("Hello failed.");
-
-		return _ret;
+		_ret ? output_handler(ui_action::on_connect, ui_status::pending, _T("Connect..."), wxString{}) :
+			output_handler(ui_action::on_connect, ui_status::failed, _T("Connect failed."), wxString{});
 	}
 
-	bool app::on_disconnect_frame_callback(wxString& status)
+	void app::on_disconnect_frame_callback(const wxString& /*data*/)
 	{
 		auto _status = m_tcp_client->disconnect();
-		if (_status != gologin::tcp::client_traits::status::disconnected)
-		{
-			status = _T("Disconnection failed.");
-			return false;
-		}
 
-		status = _T("Disconnected.");
-		return false;
+		_status != gologin::tcp::client_traits::status::disconnected ? output_handler(ui_action::on_disconnect, ui_status::success, _T("Disconnected."), wxString{}) :
+			output_handler(ui_action::on_disconnect, ui_status::failed, _T("Disconnection from server failed."), wxString{});
 	}
 
-	bool app::on_send_frame_callback(const wxString& message, wxString& status)
+	void app::on_send_frame_callback(const wxString& data)
 	{
 		gologin::messages::client::msg::request _request;
 		_request[_message_field_("command")] = gologin::messages::commands::msg;
 		_request[_message_field_("id")] = m_cookie._client_id;
 		_request[_message_field_("session")] = m_cookie._client_session;
-		_request[_message_field_("body")] = message.c_str().AsChar();
+		_request[_message_field_("body")] = data.c_str().AsChar();
 
 		auto _buff = google::json::packer::to(_request);
 		auto _ret = m_tcp_client->send(gologin::messages::commands::msg, _buff);
 
-		status = _ret ? _T("Message succes.") : _T("Message fail.");
-
-		return true;
+		_ret ? output_handler(ui_action::on_send, ui_status::pending, _T("Mesaging..."), wxString{}) :
+			output_handler(ui_action::on_send, ui_status::failed, _T("Mesaging failed."), wxString{});
 	}
 
 	void app::server_message_packet_handler(const gologin::messages::server::msg::request& request, gologin::messages::client::msg::response& responce)
@@ -232,6 +243,7 @@ namespace gologin::gui
 
 		auto _sender_login = request[_message_field_("sender_login")];
 		auto _sender_session = request[_message_field_("session")];
+		auto _message = request[_message_field_("body")];
 
 		if (_sender_login != m_cookie._client_login || _sender_session != m_cookie._client_session)
 		{
@@ -240,9 +252,10 @@ namespace gologin::gui
 		}
 		else
 		{
-			responce[_message_field_("client_id")] = m_cookie._client_id;
 			responce[_message_field_("status")] = "ok";
 			responce[_message_field_("message")] = "all good";
+
+			output_handler(ui_action::on_recv, ui_status::success, _sender_login, _message);
 		}
 	}
 
@@ -252,6 +265,14 @@ namespace gologin::gui
 		auto _status = responce[_message_field_("status")];
 		auto _client_id = responce[_message_field_("client_id")];
 		auto _message = responce[_message_field_("message")];
+
+		/*if (_client_id != m_cookie._client_id)
+		{
+			return 
+		}*/
+
+		_status == "ok" ? output_handler(ui_action::on_send, ui_status::success, _T("Message was sended."), wxString{}) :
+			output_handler(ui_action::on_send, ui_status::failed, _message, wxString{});
 	}
 
 	void app::server_hello_reply_packet_handler(const gologin::messages::server::hello::response& responce)
@@ -259,6 +280,7 @@ namespace gologin::gui
 		auto _sender_id = responce[_message_field_("id")];
 		auto _auth_method = responce[_message_field_("auth_method")];
 
+		output_handler(ui_action::on_connect, ui_status::success, _T("Connection has been established."), wxString{});
 	}
 
 	void app::server_auth_reply_packet_handler(const gologin::messages::server::auth::response& responce)
@@ -267,12 +289,18 @@ namespace gologin::gui
 		auto _status = responce[_message_field_("status")];
 		auto _client_id = responce[_message_field_("session")];
 		auto _message = responce[_message_field_("message")];
+
+		_status == "ok" ? output_handler(ui_action::on_login, ui_status::pending, _T("Login success."), wxString{}) :
+			output_handler(ui_action::on_login, ui_status::failed, _message, wxString{});
 	}
 
 	void app::server_bye_reply_packet_handler(const gologin::messages::server::bye::response& responce)
 	{
 		auto _sender_id = responce[_message_field_("id")];
 		auto _status = responce[_message_field_("status")];
+
+		_status == "ok" ? output_handler(ui_action::on_logout, ui_status::pending, _T("Logout success."), wxString{}) :
+			output_handler(ui_action::on_logout, ui_status::failed, _T("Logout failed."), wxString{});
 	}
 
 	void app::server_ping_reply_packet_handler(const gologin::messages::server::ping::response& responce)
@@ -280,5 +308,8 @@ namespace gologin::gui
 		auto _sender_id = responce[_message_field_("id")];
 		auto _status = responce[_message_field_("status")];
 		auto _message = responce[_message_field_("message")];
+
+		_status == "ok" ? output_handler(ui_action::on_login, ui_status::success, _T("Ping success."), wxString{}) :
+			output_handler(ui_action::on_login, ui_status::failed, _message, wxString{});
 	}
 }
