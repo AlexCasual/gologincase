@@ -34,6 +34,8 @@ See [config](config/gologin.json)
 
 At the moment only `cmake-based` build systems are supported.
 
+## Logs
+Log files are locate in the user app home dir;
 
 ## How to run
 cfg:
