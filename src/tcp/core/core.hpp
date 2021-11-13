@@ -58,14 +58,7 @@ typedef int ka_prop_t;
 namespace gologin
 {	
 	namespace tcp
-	{
-		using packet_header_t = struct
-		{
-			uint64_t sign;
-			uint32_t size;
-			char type[16];
-		};
-		
+	{		
 		namespace server_traits
 		{	
 		  enum class status : uint8_t 
@@ -109,8 +102,8 @@ namespace gologin
 		  client_base() = default;
 		  virtual ~client_base() = default;
 		  
-		  virtual bool recv(gologin::core::types::buffer_t& _buff) = 0;
-		  virtual bool send(gologin::core::types::packet_type _type, const gologin::core::types::buffer_t& _buff) const;
+		  virtual bool recv(core::types::buffer_t& _buff) = 0;
+		  virtual bool send(core::types::cmd_t _cmd, const core::types::buffer_t& _buff) const;
 		  virtual uint32_t host() const;
 		  virtual uint16_t port() const;
 		  virtual client_traits::status status() const;
@@ -118,18 +111,18 @@ namespace gologin
 		  virtual socket_traits::type type() const;
 
 		protected:
-			sockaddr_in_t m_address;
 			socket_t m_socket;
+			sockaddr_in_t m_address;
 			client_traits::session_id_t m_id;
 			socket_traits::type m_type;
 			std::atomic<client_traits::status> m_status;
 		};
 
-		static std::vector<char> create_packet(gologin::core::types::packet_type _type, const gologin::core::types::buffer_t& _buff);
+		static std::vector<char> create_packet(core::types::cmd_t _cmd, const core::types::buffer_t& _buff);
 		
-		inline const packet_header_t* header_packet(const gologin::core::types::buffer_t& _buff)
+		inline const core::types::packet_header_t* header_packet(const core::types::buffer_t& _buff)
 		{
-			return reinterpret_cast<const packet_header_t*>(_buff.data());
+			return reinterpret_cast<const core::types::packet_header_t*>(_buff.data());
 		}
 
 		inline int get_last_error()

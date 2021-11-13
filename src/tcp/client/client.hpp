@@ -16,8 +16,8 @@ namespace gologin
 		  client_traits::status disconnect() noexcept;
 		  
 		private:
-		  bool recv(gologin::core::types::buffer_t& _buff) override;
-		  bool recv(gologin::tcp::packet_header_t& _header, gologin::core::types::buffer_t& _buff);
+		  bool recv(core::types::buffer_t& _buff) override;
+		  bool recv(core::types::packet_header_t& _header, core::types::buffer_t& _buff);
 		
 		private:
 			std::shared_ptr<gologin::core::dispatcher> m_disp;

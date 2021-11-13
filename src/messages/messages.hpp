@@ -8,10 +8,17 @@ namespace gologin
 {
 	namespace messages
 	{
+		namespace header
+		{
+			constexpr std::string_view id{"command"};
+		}
+
 		namespace commands
 		{
-			constexpr std::string_view hello{"HELLO"};
+			constexpr std::string_view hello{"hello"};
+			constexpr std::string_view hello_reply{"hello"};
 			constexpr std::string_view auth{"login"};
+			constexpr std::string_view auth_reply{"login"};
 			constexpr std::string_view msg{"message"};
 			constexpr std::string_view msg_reply{"message_reply"};
 			constexpr std::string_view ping{"ping"};
@@ -22,11 +29,6 @@ namespace gologin
 
 		namespace client
 		{
-			using header =
-					google::tagged_tuple<
-					google::member<"id", std::uint64_t>, 
-					google::member<"command", std::string>>;
-
 			namespace hello
 			{
 				using request =
@@ -84,11 +86,6 @@ namespace gologin
 
 		namespace server
 		{
-			using header =
-					google::tagged_tuple<
-					google::member<"id", std::uint64_t>, 
-					google::member<"command", std::string>>;
-
 			namespace hello
 			{
 				using response =

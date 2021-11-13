@@ -7,22 +7,6 @@ namespace gologin::tcp
 	{
 		m_type = socket_traits::type::client;
 		m_status = client_traits::status::disconnected;
-
-		m_handler_thread = std::thread([this]()
-		{
-			while(m_status == client_traits::status::connected)
-			{
-				gologin::core::types::buffer_t _in;
-				gologin::core::types::buffer_t _out;
-
-				packet_header_t _header;
-
-				if (recv(_header, _in))
-				{
-					m_disp->dispatch(_header.type, _in, _out);
-				}
-			}
-		});
 	}
 
 	client::~client()
@@ -39,25 +23,63 @@ namespace gologin::tcp
 
 	client_traits::status client::connect(const std::string& host, uint16_t port) noexcept 
 	{
+		if (m_status == client_traits::status::connected)
+		{
+			return m_status;
+		}
+
 	  _WINDOWS_PLATFORM_(if(::WSAStartup(MAKEWORD(2, 2), &m_wsadata) != 0) {})
 
 	  if((m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) _CROSS_PLATFORM_(== INVALID_SOCKET, < 0))
 		  return m_status = client_traits::status::init_error;
 
-	  new(&m_socket) sockaddr_in_t;
-	  m_address.sin_family = AF_INET;
-	  m_address.sin_addr.s_addr = ::inet_addr(host.c_str());
-	  m_address.sin_port = ::htons(port);
-	  _CROSS_PLATFORM_(m_address.sin_addr.S_un.S_addr = ::inet_addr(host.c_str()) , m_address.sin_addr.s_addr = ::inet_addr(host.c_str()));
+	  //new(&m_socket) sockaddr_in_t;
 
-	  if(::connect(m_socket, (sockaddr *)&m_address, sizeof(m_address)) _CROSS_PLATFORM_(== SOCKET_ERROR,!= 0)) 
+	  int sd, err = 0;
+	  struct addrinfo _addrinfo = {}, *_paddrinfo;    
+	  _addrinfo.ai_family = AF_INET;
+	  _addrinfo.ai_socktype = SOCK_STREAM;
+	  _addrinfo.ai_protocol = IPPROTO_TCP;
+
+	  auto _port = std::to_string(port); 
+	  auto _err = ::getaddrinfo(host.c_str(), _port.c_str(), &_addrinfo, &_paddrinfo);
+	  if (_err == 0)
 	  {
-		_CROSS_PLATFORM_(::closesocket(m_socket) , ::close(m_socket));
+		  m_address.sin_port = port;
+
+		  if(::connect(m_socket,  _paddrinfo->ai_addr ,  _paddrinfo->ai_addrlen) _CROSS_PLATFORM_(== SOCKET_ERROR,!= 0)) 
+		  {
+			  auto _le = get_last_error();
+
+			_CROSS_PLATFORM_(::closesocket(m_socket) , ::close(m_socket));
 		
-		return m_status = client_traits::status::connect_error;
+			return m_status = client_traits::status::connect_error;
+		  }
 	  }
+
+	  m_status = client_traits::status::connected;
+
+	  m_handler_thread = std::thread([this]()
+		  {
+			  std::size_t _client_id = static_cast<std::size_t>(m_socket);
+
+				while(m_status == client_traits::status::connected)
+				{
+					core::types::buffer_t _in;
+					core::types::buffer_t _out;
+
+					core::types::packet_header_t _header;
+
+					if (recv(_header, _in))
+					{
+						std::string _cmd{_header.type};
+						core::types::client_cookies_t _cookie{_client_id};
+						m_disp->dispatch(_cmd,_cookie, _in, _out);
+					}
+				}
+		  });
 	  
-	  return m_status = client_traits::status::connected;
+	  return m_status;
 	}
 
 	client_traits::status client::disconnect() noexcept 
@@ -76,16 +98,16 @@ namespace gologin::tcp
 	  return m_status;
 	}
 	
-	bool client::recv(gologin::core::types::buffer_t& _buff)
+	bool client::recv(core::types::buffer_t& _buff)
 	{
-		packet_header_t _header;
+		core::types::packet_header_t _header;
 
 		auto _ret = recv(_header, _buff);
 
 		return _ret;
 	}
 
-	bool client::recv(gologin::tcp::packet_header_t& _header, gologin::core::types::buffer_t& _buff)
+	bool client::recv(core::types::packet_header_t& _header, core::types::buffer_t& _buff)
 	{	
 		auto _res = ::recv(m_socket, reinterpret_cast<char*>(&_header), sizeof(_header), 0);
 		if (_res)

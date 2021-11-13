@@ -16,14 +16,18 @@ namespace gologin
 		//forward decl
 		class server_client;
 
+		using client_handler_t = std::function<void()>;
+		using packet_handler_t = std::function<void(const core::types::packet_header_t&, const core::types::buffer_t&, core::types::buffer_t&)>;
+
 		class server 
 		{		  
 		public:
 		  server(uint16_t port, std::shared_ptr<gologin::core::dispatcher> disp, std::shared_ptr<gologin::core::logger> logger, keep_alive_config ka_conf = {});
 		  ~server();
 
-		  void send_to_all(gologin::core::types::packet_type _type, const gologin::core::types::buffer_t& _buff);
-		  
+		  bool send_to(const core::types::client_cookies_t& _cookies, core::types::cmd_t _cmd, const core::types::buffer_t& _buff);
+		  void handle(std::string_view _cmd, const packet_handler_t& _handler);
+
 		  server_traits::status status() const;
 		  server_traits::status start();
 		  void stop();
@@ -31,8 +35,8 @@ namespace gologin
 		private:
 		  void handler_thread_routine();
 		  bool set_keep_alive(socket_t socket, bool alive);
-		  void client_handler(std::list<std::unique_ptr<server_client>>::iterator _cur);
-		  void packet_handler(const gologin::core::types::buffer_t& _buff, server_client& _client);
+		  void client_handler(sockaddr_in_t _client_address, socket_t _client_socket);
+		  void packet_handler(std::size_t _cid, const core::types::packet_header_t& _header, const core::types::buffer_t& _buff, server_client& _client);
 			  
 		private:
 		  std::shared_ptr<gologin::core::dispatcher> m_disp;
@@ -42,9 +46,11 @@ namespace gologin
 		  uint16_t m_server_port;
 		  keep_alive_config m_ka_conf;
 		  std::thread m_handler_thread;
+		  std::shared_mutex m_packet_handlers_mutex;
+		  std::map<std::size_t, packet_handler_t> m_packet_handlers;
 		  std::shared_mutex m_client_list_mutex;
-		  std::list<std::unique_ptr<server_client>> m_client_list;
-		  std::mutex m_client_handler_mutex;
+		  std::map<std::size_t, std::shared_ptr<server_client>> m_client_list;
+		  std::shared_mutex m_client_handler_mutex;
 		  std::list<std::thread> m_client_handler_threads;
 		#ifdef _WIN32
 		  WSAData m_wsadata;
@@ -59,7 +65,8 @@ namespace gologin
 		  server_client(socket_t socket, sockaddr_in_t address);
 		  ~server_client() override;
 
-		  bool recv(gologin::core::types::buffer_t& _buff) override;
+		  bool recv(core::types::buffer_t& _buff) override;
+		  bool recv(core::types::packet_header_t& _header, core::types::buffer_t& _buff);
 		  
 		private:
 		  void disconnect();

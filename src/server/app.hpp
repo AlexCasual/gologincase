@@ -34,12 +34,12 @@ namespace gologin
 		void handleOption(const std::string& name, const std::string& value) override final;
 				
 	private:
-		void client_hello_packet_handler(const gologin::messages::client::hello::request& request, gologin::messages::server::hello::response& responce);	
-		void client_ping_packet_handler(const gologin::messages::client::ping::request& request, gologin::messages::server::auth::response& responce);
-		void client_login_packet_handler(const gologin::messages::client::auth::request& request, gologin::messages::server::auth::response& responce);
-		void client_logout_packet_handler(const gologin::messages::client::bye::request& request, gologin::messages::server::bye::response& responce);
-		void client_message_packet_handler(const gologin::messages::client::msg::request& request, gologin::messages::server::msg::response& responce);	
-		void client_message_reply_packet_handler(const gologin::messages::client::msg::response& responce);
+		void client_hello_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::hello::request& request, gologin::messages::server::hello::response& responce);	
+		void client_ping_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::ping::request& request, gologin::messages::server::auth::response& responce);
+		void client_login_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::auth::request& request, gologin::messages::server::auth::response& responce);
+		void client_logout_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::bye::request& request, gologin::messages::server::bye::response& responce);
+		void client_message_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::msg::request& request, gologin::messages::server::msg::response& responce);	
+		void client_message_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::client::msg::response& responce);
 
 	private:
 		app_config m_config;

@@ -15,7 +15,7 @@ namespace gologin
 			
 			virtual ~dispatcher() = default;
 
-			virtual bool dispatch(gologin::core::types::packet_type tp, const types::buffer_t& in, types::buffer_t& out) = 0;
+			virtual bool dispatch(std::string& _cmd, const types::client_cookies_t& _cookies, const types::buffer_t& in, types::buffer_t& out) = 0;
 			
 			protected:
 			std::shared_ptr<gologin::core::logger> m_logger;

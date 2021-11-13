@@ -3,23 +3,25 @@
 
 namespace gologin::tcp
 {
-	std::vector<char> create_packet(gologin::core::types::packet_type _type, const gologin::core::types::buffer_t& _buff)
+	std::vector<char> create_packet(core::types::cmd_t _cmd, const core::types::buffer_t& _buff)
 	{
 		std::vector<char> _packet;
 
 		if (!_buff.empty())
 		{
-			if(_type.size() < sizeof(packet_header_t::type))
+			if(_cmd.size() < sizeof(core::types::packet_header_t::type))
 			{
-				size_t _size = _buff.size() + sizeof(packet_header_t);
+				size_t _size = _buff.size() + sizeof(core::types::packet_header_t);
 
 				_packet.resize(_size);
 
-				auto _header = reinterpret_cast<packet_header_t*>(_packet.data());
+				auto _header = reinterpret_cast<core::types::packet_header_t*>(_packet.data());
+				auto _body = reinterpret_cast<void*>(_packet.data() + sizeof(core::types::packet_header_t));
 
-				_header->size = _size;
+				_header->size = static_cast<uint32_t>(_buff.size());
 
-				std::memcpy(_header->type, _type.data(), _type.size());
+				std::memcpy(_header->type, _cmd.data(), _cmd.size());
+				std::memcpy(_body, _buff.data(), _buff.size());
 			}
 		}
 
@@ -51,11 +53,11 @@ namespace gologin::tcp
 		return m_type;
 	}
 
-	bool client_base::send(gologin::core::types::packet_type _type, const gologin::core::types::buffer_t& _buff) const
+	bool client_base::send(core::types::cmd_t _cmd, const core::types::buffer_t& _buff) const
 	{
 		if(!_buff.empty())
 		{
-			auto _packet = create_packet(_type, _buff);
+			auto _packet = create_packet(_cmd, _buff);
 			if (!_packet.empty())
 			{
 				auto _res = (::send(m_socket, _packet.data(), _packet.size(), 0) >= 0);

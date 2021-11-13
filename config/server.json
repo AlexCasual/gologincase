@@ -3,5 +3,5 @@
 	"logger_sink": "console",
 	"tcp_server": "localhost:10501",
 	"client_pass": "gologin",
-	"client_login": "gologin",
+	"client_login": "gologin"
 }

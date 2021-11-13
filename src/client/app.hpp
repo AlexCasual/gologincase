@@ -43,12 +43,12 @@ namespace gologin
 			void on_disconnect_frame_callback(const wxString& data);
 			void on_send_frame_callback(const wxString& data);
 
-			void server_message_packet_handler(const gologin::messages::server::msg::request& request, gologin::messages::client::msg::response& responce);
-			void server_message_reply_packet_handler(const gologin::messages::server::msg::response& responce);
-			void server_hello_reply_packet_handler(const gologin::messages::server::hello::response& responce);
-			void server_auth_reply_packet_handler(const gologin::messages::server::auth::response& responce);
-			void server_bye_reply_packet_handler(const gologin::messages::server::bye::response& responce);
-			void server_ping_reply_packet_handler(const gologin::messages::server::ping::response& responce);
+			void server_message_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::msg::request& request, gologin::messages::client::msg::response& responce);
+			void server_message_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::msg::response& responce);
+			void server_hello_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::hello::response& responce);
+			void server_auth_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::auth::response& responce);
+			void server_bye_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::bye::response& responce);
+			void server_ping_reply_packet_handler(const core::types::client_cookies_t& _cookies, const gologin::messages::server::ping::response& responce);
 
 		private:
 			app_config m_config;

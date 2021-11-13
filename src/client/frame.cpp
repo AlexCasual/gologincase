@@ -278,23 +278,29 @@ namespace gologin::gui
 
 			m_address_field->Disable();
 
-			m_status_bar->SetStatusText(msg);
+			if(!m_login_button->IsEnabled())
+			{
+				m_login_button->Enable();
+				m_login_field->Enable();
+			}
+
+			if(!m_logout_button->IsEnabled())
+			{
+				m_logout_button->Enable();
+				m_login_field->Enable();
+			}
 
 			m_connect_button->Hide();
-
-			m_main_panel->Layout();
-
-			return;
 		}
 		else if (st == ui_status::pending)
 		{
 			m_address_field->Disable();
 			m_connect_button->Disable();
-			m_main_panel->Layout();
-			return;
 		}
 		
 		m_status_bar->SetStatusText(msg);
+
+		m_main_panel->Layout();
 	}
 
 	void frame::on_disconnect(const ui_status& st, const wxString& msg, const wxString& data)
@@ -303,24 +309,37 @@ namespace gologin::gui
 		{
 			m_connect_button->Show(true);
 
-			m_address_field->Enable();
+			m_connect_button->Enable();
 
-			m_status_bar->SetStatusText(msg);
+			m_address_field->Enable();
 
 			m_disconnect_button->Hide();
 
-			m_main_panel->Layout();
+			if (m_send_button->IsEnabled())
+			{
+				m_send_button->Disable();
+				m_input_field->Disable();
+			}
 
-			return;
+			if (m_login_button->IsEnabled())
+			{
+				m_login_button->Disable();
+				m_login_field->Disable();
+			}
+
+			m_logout_button->Hide();
+			m_login_button->Show(true);
+			m_login_field->Disable();
 		}
 		else if (st == ui_status::pending)
 		{
 			m_disconnect_button->Disable();
 			m_main_panel->Layout();
-			return;
 		}
 		
 		m_status_bar->SetStatusText(msg);
+
+		m_main_panel->Layout();
 	}
 
 	void frame::on_login(const ui_status& st, const wxString& msg, const wxString& data)
@@ -329,24 +348,24 @@ namespace gologin::gui
 		{		
 			m_logout_button->Show(true);
 
+			m_logout_button->Enable();
+
 			m_login_field->Disable();
-		
-			m_status_bar->SetStatusText(msg);
 
 			m_login_button->Hide();
 
-			m_main_panel->Layout();
-
-			return;
+			m_send_button->Enable();
+			m_input_field->Enable();
 		}
 		else if (st == ui_status::pending)
 		{
 			m_login_button->Disable();
 			m_main_panel->Layout();
-			return;
 		}
 
 		m_status_bar->SetStatusText(msg);
+
+		m_main_panel->Layout();
 	}
 
 	void frame::on_logout(const ui_status& st, const wxString& msg, const wxString& data)
@@ -357,46 +376,30 @@ namespace gologin::gui
 
 			m_login_field->Enable();
 
-			m_status_bar->SetStatusText(msg);
-
 			m_logout_button->Hide();
-
-			m_main_panel->Layout();
-
-			return;
+			
+			m_send_button->Disable();
+			m_input_field->Disable();
 		}
 		else if (st == ui_status::pending)
 		{
 			m_logout_button->Disable();
-			m_main_panel->Layout();
-			return;
 		}
 
 		m_status_bar->SetStatusText(msg);
+
+		m_main_panel->Layout();
 	}
 
 	void frame::on_send(const ui_status& st, const wxString& msg, const wxString& data)
 	{
-		if (st == ui_status::success)
+		if (st == ui_status::pending)
 		{
-			return;
-		}
-		else if (st == ui_status::pending)
-		{
-			m_output_field->AppendText(detail::sender_prefix);
-			m_output_field->AppendText(data);
-
-			m_output_field->SetInsertionPointEnd();
-			m_output_field->AppendText(_T("\n"));
-
 			m_input_field->Clear();
-
-			m_main_panel->Layout();
 			
-			return;
+			m_status_bar->SetStatusText(msg);
+			m_main_panel->Layout();
 		}
-
-		m_status_bar->SetStatusText(msg);
 	}
 
 	void frame::on_recv(const ui_status& st, const wxString& msg, const wxString& data)
